@@ -3,11 +3,12 @@ type PaymentMethod = "CASH" | "CARD" | "UPI";
 type InvoiceStatus = "DRAFT" | "ISSUED" | "PAID" | "REFUNDED";
 
 // things like ordering food directly to your hotel room
-// the catalog of service items are provided by lib/serviceItems
+// the catalog of service items are stored in a databse table
 export type ServiceItem = {
     id: string;
     name: string;
     price: number;
+    isActive: boolean; // default yes, no only if discontinued (no longer offered at all)
 };
 
 type InvoiceItem = {

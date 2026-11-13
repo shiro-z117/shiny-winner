@@ -5,7 +5,7 @@ type RoomStatus =
     | "MAINTENANCE"
     | "RESERVED";
 
-// the catalog of room categories are provided by lib/roomCategories
+// the catalog of room categories are stored in a database table
 export type RoomCategory = {
     id: string;
     name: string;
@@ -13,6 +13,7 @@ export type RoomCategory = {
     basePrice: number; // total cents (integer); nightly rate
     maxOccupancy: number;
     amenities: string[];
+    isActive: boolean; // default yes, no only if discontinued ("discontinued" probably means rooms of that category have been renovated or rebranded)
 };
 
 // all money values are internally stored in total cents (integer)
