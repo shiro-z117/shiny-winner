@@ -1,21 +1,233 @@
 // use prisma-8
 
-model User {
-  id        Int                @id @default(autoincrement())
-  email     String             @unique
-  username  String?
-  name      String?
-  posts     Post[]
-  createdAt DateTime           @default(now()) @onCreate(now())
-  updatedAt temporal.UpdatedAt
+enum Role {
+  @@type("pg/text@1")
+  ADMIN        = "ADMIN"
+  RECEPTIONIST = "RECEPTIONIST"
+  HOUSEKEEPING = "HOUSEKEEPING"
+  MANAGER      = "MANAGER"
 }
 
-model Post {
-  id        Int                @id @default(autoincrement())
-  title     String
-  content   String?
-  author    User               @relation(fields: [authorId], references: [id])
-  authorId  Int
-  createdAt DateTime           @default(now()) @onCreate(now())
+enum RoomStatus {
+  @@type("pg/text@1")
+  AVAILABLE   = "AVAILABLE"
+  OCCUPIED    = "OCCUPIED"
+  CLEANING    = "CLEANING"
+  MAINTENANCE = "MAINTENANCE"
+  RESERVED    = "RESERVED"
+}
+
+enum ReservationStatus {
+  @@type("pg/text@1")
+  PENDING     = "PENDING"
+  CONFIRMED   = "CONFIRMED"
+  CHECKED_IN  = "CHECKED_IN"
+  CHECKED_OUT = "CHECKED_OUT"
+  CANCELLED   = "CANCELLED"
+  NO_SHOW     = "NO_SHOW"
+}
+
+enum PaymentMethod {
+  @@type("pg/text@1")
+  CASH = "CASH"
+  CARD = "CARD"
+  UPI  = "UPI"
+}
+
+enum InvoiceStatus {
+  @@type("pg/text@1")
+  DRAFT    = "DRAFT"
+  ISSUED   = "ISSUED"
+  PAID     = "PAID"
+  REFUNDED = "REFUNDED"
+}
+
+enum TaskStatus {
+  @@type("pg/text@1")
+  PENDING     = "PENDING"
+  IN_PROGRESS = "IN_PROGRESS"
+  COMPLETED   = "COMPLETED"
+}
+
+enum MaintenanceStatus {
+  @@type("pg/text@1")
+  OPEN        = "OPEN"
+  IN_PROGRESS = "IN_PROGRESS"
+  RESOLVED    = "RESOLVED"
+}
+
+model Employee {
+  id           String             @id @onCreate(uuid())
+  email        String             @unique
+  passwordHash String
+  fullName     String
+  phone        String
+  role         Role
+  isActive     Boolean            @default(true)
+  isAvailable  Boolean            @default(true)
+  createdAt    temporal.CreatedAt
+  updatedAt    temporal.UpdatedAt
+
+  reservations        Reservation[]
+  invoicesPaid        Invoice[]
+  housekeepingTasks   HousekeepingTask[]
+  maintenanceRequests MaintenanceRequest[]
+}
+
+model Guest {
+  id        String             @id @onCreate(uuid())
+  fullName  String
+  email     String
+  phone     String
+  address   String
+  createdAt temporal.CreatedAt
   updatedAt temporal.UpdatedAt
+
+  reservations Reservation[]
+}
+
+model RoomCategory {
+  id           String   @id @onCreate(uuid())
+  name         String   @unique
+  description  String
+  basePrice    Int
+  maxOccupancy Int
+  amenities    String[]
+  isActive     Boolean  @default(true)
+
+  rooms Room[]
+
+  @@check(expression: sql`"basePrice" >= 0`, name: "room_category_price_valid")
+}
+
+model Room {
+  id           String             @id @onCreate(uuid())
+  roomNumber   String             @unique
+  categoryId   String
+  price        Int
+  maxOccupancy Int
+  images       String[]
+  status       RoomStatus         @default(AVAILABLE)
+  createdAt    temporal.CreatedAt
+  updatedAt    temporal.UpdatedAt
+
+  category            RoomCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  reservations        Reservation[]
+  housekeepingTasks   HousekeepingTask[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@index([status])
+  @@check(expression: sql`"price" >= 0`, name: "room_price_valid")
+}
+
+model Reservation {
+  id             String             @id @onCreate(uuid())
+  guestId        String
+  roomId         String?
+  status         ReservationStatus  @default(PENDING)
+  checkInDate    Date
+  checkOutDate   Date
+  adults         Int
+  children       Int
+  actualCheckIn  DateTime?
+  actualCheckOut DateTime?
+  notes          String?
+  createdById    String
+  createdAt      temporal.CreatedAt
+  updatedAt      temporal.UpdatedAt
+  cancelledAt    DateTime?
+
+  guest     Guest    @relation(fields: [guestId], references: [id], onDelete: Restrict)
+  room      Room?    @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  createdBy Employee @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  invoice   Invoice?
+
+  @@index([roomId, checkInDate, checkOutDate])
+  @@index([status])
+  @@check(expression: sql`"checkOutDate" > "checkInDate"`, name: "reservation_dates_valid")
+}
+
+model ServiceItem {
+  id       String  @id @onCreate(uuid())
+  name     String
+  price    Int
+  isActive Boolean @default(true)
+
+  invoiceItems InvoiceItem[]
+
+  @@check(expression: sql`"price" >= 0`, name: "service_item_price_valid")
+}
+
+model Invoice {
+  id            String             @id @onCreate(uuid())
+  reservationId String             @unique
+  roomCharge    Int
+  subtotal      Int
+  taxRate       Float
+  taxAmount     Int
+  discount      Int
+  total         Int
+  status        InvoiceStatus      @default(DRAFT)
+  paymentMethod PaymentMethod?
+  paidAt        DateTime?
+  paidById      String?
+  refundedAt    DateTime?
+  refundAmount  Int?
+  issuedAt      DateTime?
+  createdAt     temporal.CreatedAt
+  updatedAt     temporal.UpdatedAt
+
+  reservation Reservation   @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  paidBy      Employee?     @relation(fields: [paidById], references: [id], onDelete: Restrict)
+  items       InvoiceItem[]
+
+  @@index([status])
+  @@check(expression: sql`"total" >= 0`, name: "invoice_total_valid")
+}
+
+model InvoiceItem {
+  id            String @id @onCreate(uuid())
+  invoiceId     String
+  serviceItemId String
+  name          String
+  unitPrice     Int
+  quantity      Int
+
+  invoice     Invoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  serviceItem ServiceItem @relation(fields: [serviceItemId], references: [id], onDelete: Restrict)
+
+  @@check(expression: sql`"quantity" > 0`, name: "invoice_item_quantity_valid")
+}
+
+model HousekeepingTask {
+  id           String             @id @onCreate(uuid())
+  roomId       String
+  assignedToId String?
+  status       TaskStatus         @default(PENDING)
+  notes        String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    temporal.CreatedAt
+  updatedAt    temporal.UpdatedAt
+
+  room       Room      @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  assignedTo Employee? @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+}
+
+model MaintenanceRequest {
+  id           String             @id @onCreate(uuid())
+  roomId       String
+  reportedById String
+  description  String
+  status       MaintenanceStatus  @default(OPEN)
+  resolvedAt   DateTime?
+  createdAt    temporal.CreatedAt
+  updatedAt    temporal.UpdatedAt
+
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  reportedBy Employee @relation(fields: [reportedById], references: [id], onDelete: Restrict)
+
+  @@index([status])
 }
