@@ -1,34 +1,27 @@
 @import "tailwindcss";
 
-/*TODO new color scheme idk optional*/
-
 :root {
+  /*main color palette*/
   --background: #f4f8f8;
-  --foreground: #103657;
-  --primary: #008d9b;
+  --foreground: #171717;
+  --primary: #00b4d8;
   --primary-foreground: #fff;
-
-
-  --popover: #fff;
-  --popover-foreground: #171717;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #171717;
-  --muted: #f5f5f5;
-  --muted-foreground: #637b88;
-  --accent: #f5f5f5;
-  --accent-foreground: #171717;
-  --destructive: #e7000b;
-  --radius: 0.625rem;
-
-  --ring: #009baa;
-  --border: #e0e9eb;
-  --input: #cbdadd;
+  --muted: #caf0f8;
+  --muted-foreground: #4d8a9d;
+  --border: #ade8f4;
   --card: #fff;
-  --card-foreground: #103657;
-  --header-height: 8rem;
+
+  /*extra colors*/
+  --input: #cbdadd;
+  --destructive: #e7000b;
+
+  /*status colors*/
   --success: #15803d;
   --warning: #b45309;
   --info: #0369a1;
+
+  /*anything that's not a color*/
+  --header-height: 8rem;
 }
 
 @theme inline {
@@ -36,28 +29,19 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-
-
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
   --color-border: var(--border);
+  --color-card: var(--card);
+
   --color-input: var(--input);
-  --color-ring: var(--ring);
-  --spacing-header: var(--header-height);
-  --radius-lg: var(--radius);
+  --color-destructive: var(--destructive);
+
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
+
+  --spacing-header: var(--header-height);
 }
 
 body {
