@@ -1,4 +1,4 @@
-"server-only";
+import "server-only";
 import bcrypt from "bcryptjs";
 
 export function hashPassword(password: string): Promise<string> {
